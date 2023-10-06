@@ -1,63 +1,86 @@
-import cv2 as cv
+import cv2
 import numpy as np
 
-def find_rubiks_cube(frame):
-    # Convert the frame to grayscale for easier processing
-    gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-    
-    # Apply Gaussian blur to reduce noise
-    blurred = cv.GaussianBlur(gray, (5, 5), 0)
-    
-    # Perform edge detection
-    edges = cv.Canny(blurred, 50, 200)
-    
-    # Find contours in the edge-detected image
-    contours, _ = cv.findContours(edges, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-    #cv.drawContours(frame, contours, -1, (0,255,0), 3)
+# HSV format
+color_ranges = [
+    ((160, 100, 100), (180, 255, 255), "Red"),
+    ((30, 100, 100), (99, 255, 255), "Green"),
+    ((100, 100, 100), (130, 255, 255),"Blue"),
+    ((21, 100, 100), (35, 255, 255), "Yellow"),
+    ((0, 0, 120), (179, 25, 255), "White"),
+    ((5, 100, 100), (20, 255, 255), "Orange")
+]
 
-    cv.imshow('Original', frame)
-    cv.imshow('Gray', gray)
-    cv.imshow('Blurred', blurred)
-    cv.imshow('Edges', edges)
+'''
+def is_square(approx):
+    if len(approx) == 4:
+        (x, y, w, h) = cv2.boundingRect(approx)
+        aspect_ratio = float(w) / h
+        if aspect_ratio >= 0.95 and aspect_ratio <= 1.05:
+            return True
+    return False
+'''
 
-    
-    for contour in contours:
-        # Approximate the contour as a polygon
-        epsilon = 0.05 * cv.arcLength(contour, True)
-        approx = cv.approxPolyDP(contour, epsilon, True)
+def find_rubiks_cube(frame): # find and highlight the Rubik's Cube
+    hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
+    for lower_range, upper_range, color_name in color_ranges:
+        mask = cv2.inRange(hsv_frame, np.array(lower_range), np.array(upper_range))
+
+        blurred_frame = cv2.GaussianBlur(mask, (5, 5), 0)
+
+        kernel = np.ones((5, 5), np.uint8)
+        blurred_frame = cv2.erode(blurred_frame, kernel, iterations=1)
+        blurred_frame = cv2.dilate(blurred_frame, kernel, iterations=1)
+
+        edges = cv2.Canny(blurred_frame, 50, 150)
         
-        # If the polygon has 4 vertices, it may be the Rubik's Cube
-        if len(approx) == 4 and cv.contourArea(approx) > 500 and cv.contourArea(approx) < 3000:
-            # Draw a bounding rectangle around the detected cube
-            x, y, w, h = cv.boundingRect(approx)
-            cv.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-            
-            # Calculate the center of the Rubik's Cube
-            center_x = x + w // 2
-            center_y = y + h // 2
-            cv.circle(frame, (center_x, center_y), 5, (0, 0, 255), -1)
-            
-            # You can continue from here to detect and process the cube faces
-        
+        contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        for contour in contours:
+            area = cv2.contourArea(contour)
+            if area > 500 and area < 3000:
+                '''
+                epsilon = 0.05 * cv2.arcLength(contour, True)
+                approx = cv2.approxPolyDP(contour, epsilon, True)
+                
+                if is_square(approx):
+                    x, y, w, h = cv2.boundingRect(contour)
+                    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                    cv2.putText(frame, color_name, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+                '''
+                # draw rectangles
+                x, y, w, h = cv2.boundingRect(contour)
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                cv2.putText(frame, color_name , (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+
     return frame
 
-cap = cv.VideoCapture(0)
 
-if not cap.isOpened():
-    print("Can't capture camera")
-    exit()
-while True:
-    ret, frame = cap.read()
-    if not ret:
-        print("Can't receive frame.")
-        break
+def main():
 
-    # Call the function to find and highlight the Rubik's Cube
-    frame_with_cube = find_rubiks_cube(frame)
+    cap = cv2.VideoCapture(0) # initialize the camera
 
-    cv.imshow('Rubik\'s Cube Detection', frame_with_cube)
-    if cv.waitKey(1) == ord('q'):
-        break
+    if not cap.isOpened():
+        print("Can\'t capture camera")
+        exit()
 
-cap.release()
-cv.destroyAllWindows()
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            print("Can\'t receive frame")
+            break
+
+        frame_with_cube = find_rubiks_cube(frame)
+
+        cv2.imshow("Rubik\'s Cube Detection", frame_with_cube)
+
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
+
+
+if __name__ == "__main__":
+    main()
