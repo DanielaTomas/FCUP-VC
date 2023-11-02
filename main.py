@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import kociemba
 
 # HSV format
 color_ranges = [
@@ -22,12 +23,14 @@ def is_square(approx):
 
 
 face = []
+
+
 def find_rubiks_cube(frame): # find and highlight the Rubik's Cube pieces
     
     hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-
+    global face
     face_colors = []
-
+    groups = []
     #result = np.zeros_like(frame)
 
     squares_found = 0
@@ -74,12 +77,48 @@ def find_rubiks_cube(frame): # find and highlight the Rubik's Cube pieces
         # sort each group by x
         for group in groups:
             group.sort(key=lambda x: x[1][0])
-
-        if groups not in face: #TODO
+        
+        if not any(groups[1][1][0] in existing_groups[1][1][0] for existing_groups in face):
             face.append(groups)
+            #cv2.imwrite(f"frame{groups[1][1][0]}.jpg", frame)
             print(f"{groups[1][1][0]} face detected!")
+
+
+    #draw_arrows(frame, groups)
             
     return frame
+
+
+def color_to_position(color):
+    if face[0][1][1][0] == color:
+        return "U"
+    elif face[1][1][1][0] == color:
+        return "R"
+    elif face[2][1][1][0] == color:
+        return "F"
+    elif face[3][1][1][0] == color:
+        return "D"
+    elif face[4][1][1][0] == color:
+        return "L"
+    elif face[5][1][1][0] == color:
+        return "B"
+    return None
+
+
+'''
+def draw_arrows(frame, groups):
+    arrow_length = 80
+    arrow_color = (0, 0, 255)
+    arrow_thickness = 4
+    
+    for group in groups:
+        x_center = group[1][1][0]  # x-coordinate of the center square
+
+        # draw an arrow pointing to the right
+        start_point = (x_center - 20, group[1][1][1] + 20)
+        end_point = (x_center + arrow_length, group[1][1][1] + 20)
+        cv2.arrowedLine(frame, start_point, end_point, arrow_color, arrow_thickness)
+'''
 
 
 def main():
@@ -96,7 +135,7 @@ def main():
             print("Can\'t receive frame")
             break
 
-        frame_with_cube = find_rubiks_cube(frame)
+        frame_with_cube = find_rubiks_cube(frame) #if len(face) == 6
 
         cv2.imshow("Rubik\'s Cube Detection", frame_with_cube)
 
@@ -106,13 +145,18 @@ def main():
     cap.release()
     cv2.destroyAllWindows()
 
+    kociemba_str = ""
     # print
     for groups in face:
         print(f"{groups[1][1][0]} face")
         for group in groups:
             for color, coordinates in group:
+                kociemba_str = kociemba_str + color_to_position(color)
                 print(f"  Color: {color}, Coordinates: {coordinates}")
     
+    print(f"\nKociemba String: {kociemba_str}")
+
+    print(f"Solution: {kociemba.solve(kociemba_str)}")
 
 if __name__ == "__main__":
     main()
