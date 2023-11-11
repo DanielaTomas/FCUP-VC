@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 from main import is_square, color_ranges
-
+import copy
 
 def find_face(frame): #TODO tirar isto daqui e juntar com a do main
     
@@ -78,10 +78,28 @@ def rotate_ccw(face, temp, n):
     face[n][1][2] = temp[n][2][1]
 
 
-def u_cw(face, cap): # rotate the upper face clockwise
+def compare_faces(face1, face2):
+    #----debug
+    print(face1)
+    for groups in face2:
+        print(f"{groups[1][1][0]} face")
+        for group in groups:
+            for color, coordinates in group:
+                print(f"  Color: {color}, Coordinates: {coordinates}")
+    #----
+    for i in range(3):
+        for j in range(3):
+            color1, _ = face1[i][j]
+            color2, _ = face2[2][i][j]
+            
+            if color1 != color2:
+                return False
+    return True
 
-    temp = [groups[:] for groups in face]
-    
+
+def u_cw(face, cap): # rotate the upper face clockwise
+    temp = copy.deepcopy(face)
+
     rotate_cw(face, temp, 0)
 
     for i in range(3):
@@ -90,7 +108,7 @@ def u_cw(face, cap): # rotate the upper face clockwise
         face[1][0][i] = temp[5][0][i]
         face[2][0][i] = temp[1][0][i]
 
-    while True:
+    while True: #TODO colocar isto numa função ?
         ret, frame = cap.read()
 
         if not ret:
@@ -99,28 +117,20 @@ def u_cw(face, cap): # rotate the upper face clockwise
 
         frame_with_cube, current_face = find_face(frame)
         cv2.imshow("Rubik\'s Cube Detection", frame_with_cube)
-        flag = 1
 
-        if current_face is not []:
-            for i in range(3):
-                for j in range(3):
-                    color1, _ = current_face[i][j]
-                    color2, _ = face[2][i][j]
-                    
-                    if color1 != color2:
-                        flag = 0
-        
-        if flag == 1:
-            break
-        #else:
-            #TODO draw arrows
+        if current_face != []:
+            if compare_faces(current_face,face):
+                break
+            else:
+                print('draw arrows')
+                #TODO draw arrows
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
 
 def u_ccw(face, cap): # rotate the upper face counter-clockwise
-    temp = [groups[:] for groups in face]
+    temp = copy.deepcopy(face)
     
     rotate_ccw(face, temp, 0)
 
@@ -132,7 +142,7 @@ def u_ccw(face, cap): # rotate the upper face counter-clockwise
 
 
 def r_cw(face, cap): # rotate the right face clockwise
-    temp = [groups[:] for groups in face]
+    temp = copy.deepcopy(face)
 
     rotate_cw(face, temp, 1)
 
@@ -144,7 +154,7 @@ def r_cw(face, cap): # rotate the right face clockwise
 
 
 def r_ccw(face, cap): # rotate the right face counter-clockwise
-    temp = [groups[:] for groups in face]
+    temp = copy.deepcopy(face)
 
     rotate_ccw(face, temp, 1)
 
@@ -156,7 +166,7 @@ def r_ccw(face, cap): # rotate the right face counter-clockwise
 
 
 def f_cw(face, cap): # rotate the front face clockwise
-    temp = [groups[:] for groups in face]
+    temp = copy.deepcopy(face)
 
     rotate_cw(face, temp, 2)
 
@@ -168,7 +178,7 @@ def f_cw(face, cap): # rotate the front face clockwise
         
 
 def f_ccw(face, cap): # rotate the front face counter-clockwise
-    temp = [groups[:] for groups in face]
+    temp = copy.deepcopy(face)
 
     rotate_ccw(face, temp, 2)
 
@@ -180,7 +190,7 @@ def f_ccw(face, cap): # rotate the front face counter-clockwise
 
 
 def d_cw(face, cap): # rotate the front face clockwise
-    temp = [groups[:] for groups in face]
+    temp = copy.deepcopy(face)
 
     rotate_cw(face, temp, 3)
 
@@ -192,7 +202,7 @@ def d_cw(face, cap): # rotate the front face clockwise
 
 
 def d_ccw(face, cap): # rotate the front face counter-clockwise
-    temp = [groups[:] for groups in face]
+    temp = copy.deepcopy(face)
 
     rotate_ccw(face, temp, 3)
 
@@ -204,7 +214,7 @@ def d_ccw(face, cap): # rotate the front face counter-clockwise
 
 
 def l_cw(face, cap): # rotate the left face clockwise
-    temp = [groups[:] for groups in face]
+    temp = copy.deepcopy(face)
     
     rotate_cw(face, temp, 4)
 
@@ -216,7 +226,7 @@ def l_cw(face, cap): # rotate the left face clockwise
 
 
 def l_ccw(face, cap): # rotate the left face counter-clockwise
-    temp = [groups[:] for groups in face]
+    temp = copy.deepcopy(face)
     
     rotate_ccw(face, temp, 4)
 
@@ -228,7 +238,7 @@ def l_ccw(face, cap): # rotate the left face counter-clockwise
         
 
 def b_cw(face, cap): # rotate the back face clockwise
-    temp = [groups[:] for groups in face]
+    temp = copy.deepcopy(face)
 
     rotate_cw(face, temp, 5)
 
@@ -240,7 +250,7 @@ def b_cw(face, cap): # rotate the back face clockwise
 
 
 def b_ccw(face, cap): # rotate the right face counter-clockwise
-    temp = [groups[:] for groups in face]
+    temp = copy.deepcopy(face)
     
     rotate_ccw(face, temp, 5)
 

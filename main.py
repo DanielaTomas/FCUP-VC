@@ -23,7 +23,14 @@ def is_square(approx): # check if a contour is a square
     return False
 
 
-face = []
+# face = []
+face = [[[["White",(0,0)],["White",(0,0)],["White",(0,0)]],[["White",(0,0)],["White",(0,0)],["White",(0,0)]],[["White",(0,0)],["White",(0,0)],["White",(0,0)]]],
+        [[["Green",(0,0)],["Green",(0,0)],["Green",(0,0)]],[["Green",(0,0)],["Green",(0,0)],["Green",(0,0)]],[["Green",(0,0)],["Blue",(0,0)],["Green",(0,0)]]],
+        [[["Orange",(0,0)],["Orange",(0,0)],["Orange",(0,0)]],[["Orange",(0,0)],["Orange",(0,0)],["Orange",(0,0)]],[["Blue",(0,0)],["Orange",(0,0)],["Orange",(0,0)]]],
+        [[["Yellow",(0,0)],["Yellow",(0,0)],["Yellow",(0,0)]],[["Yellow",(0,0)],["Yellow",(0,0)],["Yellow",(0,0)]],[["Yellow",(0,0)],["Yellow",(0,0)],["Yellow",(0,0)]]],
+        [[["Blue",(0,0)],["Blue",(0,0)],["Blue",(0,0)]],[["Blue",(0,0)],["Blue",(0,0)],["Blue",(0,0)]],[["Orange",(0,0)],["Green",(0,0)],["Red",(0,0)]]],
+        [[["Red",(0,0)],["Red",(0,0)],["Red",(0,0)]],[["Red",(0,0)],["Red",(0,0)],["Red",(0,0)]],[["Red",(0,0)],["Red",(0,0)],["Blue",(0,0)]]]
+        ]
 
 
 def find_face(frame): # find and highlight the Rubik's cube pieces
@@ -72,6 +79,8 @@ def find_face(frame): # find and highlight the Rubik's cube pieces
         if not any(groups[1][1][0] in existing_groups[1][1][0] for existing_groups in face):
             face.append(groups)
             print(f"{groups[1][1][0]} face detected!")
+        #else
+            #TODO draw arrows
             
     return frame
 
@@ -133,7 +142,7 @@ def main():
         ret, frame = cap.read()
         if not ret:
             print("Can\'t receive frame")
-            break
+            exit()
 
         if len(face) < 6:
             cv2.imshow("Rubik\'s Cube Detection", find_face(frame))
@@ -152,12 +161,12 @@ def main():
             if kociemba_str == "UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB":
                 print("The cube is already solved.")
             else:
-                try:
+                #try:
                     solution = kociemba.solve(kociemba_str)
                     print(f"Solution: {solution}")
                     draw_solution(cap, solution.split())
-                except Exception as e:
-                    print(f"An error occurred while solving the Rubik\'s cube: {e}")
+                #except Exception as e:
+                    #print(f"An error occurred while solving the Rubik\'s cube: {e}")
             break
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
