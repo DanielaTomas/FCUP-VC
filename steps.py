@@ -50,30 +50,30 @@ def find_face(frame): #TODO tirar daqui e juntar com a do main
     return frame, groups
 
 
-def rotate_cw(face, temp, n):
-    face[n][0][0] = temp[n][2][0]
-    face[n][0][1] = temp[n][1][0]
-    face[n][0][2] = temp[n][0][0]
+def rotate_cw(faces, temp, n):
+    faces[n][0][0] = temp[n][2][0]
+    faces[n][0][1] = temp[n][1][0]
+    faces[n][0][2] = temp[n][0][0]
 
-    face[n][1][0] = temp[n][2][1]
-    face[n][1][2] = temp[n][0][1]
-    face[n][2][2] = temp[n][0][2]
+    faces[n][1][0] = temp[n][2][1]
+    faces[n][1][2] = temp[n][0][1]
+    faces[n][2][2] = temp[n][0][2]
 
-    face[n][2][0] = temp[n][2][2]
-    face[n][2][1] = temp[n][1][2]
+    faces[n][2][0] = temp[n][2][2]
+    faces[n][2][1] = temp[n][1][2]
 
 
-def rotate_ccw(face, temp, n):
-    face[n][0][0] = temp[n][0][2]
-    face[n][0][1] = temp[n][1][2]
-    face[n][0][2] = temp[n][2][2]
+def rotate_ccw(faces, temp, n):
+    faces[n][0][0] = temp[n][0][2]
+    faces[n][0][1] = temp[n][1][2]
+    faces[n][0][2] = temp[n][2][2]
 
-    face[n][1][0] = temp[n][0][1]
-    face[n][1][2] = temp[n][2][1]
-    face[n][2][2] = temp[n][2][0]
+    faces[n][1][0] = temp[n][0][1]
+    faces[n][1][2] = temp[n][2][1]
+    faces[n][2][2] = temp[n][2][0]
 
-    face[n][2][0] = temp[n][0][0]
-    face[n][2][1] = temp[n][1][0]
+    faces[n][2][0] = temp[n][0][0]
+    faces[n][2][1] = temp[n][1][0]
 
 
 def compare_faces(face1, face2):
@@ -87,9 +87,56 @@ def compare_faces(face1, face2):
     return True
 
 
-def process_frame(face, cap, step):
+def draw_arrow(frame, start, end, color, thickness):
+    cv2.arrowedLine(frame, start, end, color, thickness, tipLength=0.2)
+
+    
+def draw_arrows(face, frame, step): #TODO draw B arrows
+    arrow_length = 100
+    arrow_thickness = 4
+    arrow_color = (0, 0, 255)
+    var = 25
+
+    if(step == "U" or step == "U'"):
+        x_start, y_start = face[0][1][1][0] - var, face[0][1][1][1] + var
+        x_end, y_end = x_start + arrow_length, y_start
+        draw_arrow(frame, (x_end, y_start) if step == "U" else (x_start, y_start), (x_start, y_end) if step == "U" else (x_end, y_end), arrow_color, arrow_thickness)
+
+    elif(step == "R" or step == "R'"):
+        x_start, y_start = face[2][2][1][0] + var, face[2][2][1][1]
+        x_end, y_end = x_start, y_start - arrow_length
+        draw_arrow(frame, (x_start, y_start) if step == "R" else (x_start, y_end), (x_end, y_end) if step == "R" else (x_end, y_start), arrow_color, arrow_thickness)
+
+    elif(step == "F" or step == "F'"):
+        arrow_length -= 50
+        x_start, y_start = face[0][1][1][0] + var, face[1][2][1][1]
+        x_end, y_end = x_start + arrow_length, y_start - arrow_length
+
+        draw_arrow(frame, (x_start, y_end) if step == "F" else (x_end, y_start), (x_end, y_start) if step == "F" else (x_start, y_end), arrow_color, arrow_thickness)
+        x_start -= var
+        x_end = x_start - arrow_length
+        draw_arrow(frame, (x_end, y_start) if step == "F" else (x_start, y_end), (x_start, y_end) if step == "F" else (x_end, y_start), arrow_color, arrow_thickness)
+        y_start += var
+        y_end = y_start + arrow_length
+        draw_arrow(frame, (x_start, y_end) if step == "F" else (x_end, y_start), (x_end, y_start) if step == "F" else (x_start, y_end), arrow_color, arrow_thickness)
+        x_start += var
+        x_end = x_start + arrow_length
+        draw_arrow(frame, (x_end, y_start) if step == "F" else (x_start, y_end), (x_start, y_end) if step == "F" else (x_end, y_start), arrow_color, arrow_thickness)
+
+    elif(step == "D" or step == "D'"):
+        x_start, y_start = face[2][1][1][0] - var, face[2][1][1][1] + var
+        x_end, y_end = x_start + arrow_length, y_start
+        draw_arrow(frame, (x_end, y_start) if step == "D'" else (x_start, y_start), (x_start, y_end) if step == "D'" else (x_end, y_end), arrow_color, arrow_thickness)
+
+    elif(step == "L" or step == "L'"):
+        x_start, y_start = face[2][0][1][0] + var, face[2][0][1][1]
+        x_end, y_end = x_start, y_start - arrow_length
+        draw_arrow(frame, (x_start, y_start) if step == "L'" else (x_start, y_end), (x_end, y_end) if step == "L'" else (x_end, y_start), arrow_color, arrow_thickness)
+
+      
+def process_frame(faces, cap, step):
     #TODO Apagar isto depois ---- debug
-    for groups in face:
+    for groups in faces:
         print(f"{groups[1][1][0]} face")
         for group in groups:
             for color, coordinates in group:
@@ -106,12 +153,11 @@ def process_frame(face, cap, step):
             cv2.imshow("Rubik\'s Cube Detection", frame_with_cube)
 
             if current_face != []:
-                if compare_faces(current_face,face[2]):
+                if compare_faces(current_face,faces[2]):
                     break
                 else:
-                    print(step)
-                    print('draw arrows')
-                    #TODO draw arrows
+                    draw_arrows(current_face, frame_with_cube, step)
+                    cv2.imshow("Rubik\'s Cube Detection", frame_with_cube)
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 cap.release()
@@ -119,169 +165,181 @@ def process_frame(face, cap, step):
                 exit()
 
 
-def u_cw(face, cap): # rotate the upper face clockwise
-    temp = copy.deepcopy(face)
+def u_cw(faces, cap): # rotate the upper face clockwise
+    print('Rotate: U')
+    temp = copy.deepcopy(faces)
 
-    rotate_cw(face, temp, 0)
+    rotate_cw(faces, temp, 0)
 
     for i in range(3):
-        face[4][0][i] = temp[2][0][i]
-        face[5][0][i] = temp[4][0][i]
-        face[1][0][i] = temp[5][0][i]
-        face[2][0][i] = temp[1][0][i]
+        faces[4][0][i] = temp[2][0][i]
+        faces[5][0][i] = temp[4][0][i]
+        faces[1][0][i] = temp[5][0][i]
+        faces[2][0][i] = temp[1][0][i]
 
-    process_frame(face, cap, "U")            
+    process_frame(faces, cap, "U")            
 
 
-def u_ccw(face, cap): # rotate the upper face counter-clockwise
-    temp = copy.deepcopy(face)
+def u_ccw(faces, cap): # rotate the upper face counter-clockwise
+    print('Rotate: U\'')
+    temp = copy.deepcopy(faces)
     
-    rotate_ccw(face, temp, 0)
+    rotate_ccw(faces, temp, 0)
 
     for i in range(3):
-        face[1][0][i] = temp[2][0][i]
-        face[5][0][i] = temp[1][0][i]
-        face[4][0][i] = temp[5][0][i]
-        face[2][0][i] = temp[4][0][i]
+        faces[1][0][i] = temp[2][0][i]
+        faces[5][0][i] = temp[1][0][i]
+        faces[4][0][i] = temp[5][0][i]
+        faces[2][0][i] = temp[4][0][i]
 
-    process_frame(face, cap, "U'")
+    process_frame(faces, cap, "U'")
 
 
-def r_cw(face, cap): # rotate the right face clockwise
-    temp = copy.deepcopy(face)
+def r_cw(faces, cap): # rotate the right face clockwise
+    print('Rotate: R')
+    temp = copy.deepcopy(faces)
 
-    rotate_cw(face, temp, 1)
+    rotate_cw(faces, temp, 1)
 
     for i in range(3):
-        face[0][i][2] = temp[2][i][2]
-        face[5][2-i][0] = temp[0][i][2]
-        face[3][i][2] = temp[5][2-i][0]
-        face[2][i][2] = temp[3][i][2]
+        faces[0][i][2] = temp[2][i][2]
+        faces[5][2-i][0] = temp[0][i][2]
+        faces[3][i][2] = temp[5][2-i][0]
+        faces[2][i][2] = temp[3][i][2]
     
-    process_frame(face, cap, "R")
+    process_frame(faces, cap, "R")
 
 
-def r_ccw(face, cap): # rotate the right face counter-clockwise
-    temp = copy.deepcopy(face)
+def r_ccw(faces, cap): # rotate the right face counter-clockwise
+    print('Rotate: R\'')
+    temp = copy.deepcopy(faces)
 
-    rotate_ccw(face, temp, 1)
-
-    for i in range(3):
-        face[2][i][2] = temp[0][i][2]
-        face[0][i][2] = temp[5][2-i][0]
-        face[5][2-i][0] = temp[3][i][2]
-        face[3][i][2] = temp[2][i][2]
-
-    process_frame(face, cap, "R'")
-
-
-def f_cw(face, cap): # rotate the front face clockwise
-    temp = copy.deepcopy(face)
-
-    rotate_cw(face, temp, 2)
+    rotate_ccw(faces, temp, 1)
 
     for i in range(3):
-        face[1][i][0] = temp[0][2][i]
-        face[3][0][i] = temp[1][2-i][0]
-        face[4][i][2] = temp[3][0][i]
-        face[0][2][2-i] = temp[4][i][2]
+        faces[2][i][2] = temp[0][i][2]
+        faces[0][i][2] = temp[5][2-i][0]
+        faces[5][2-i][0] = temp[3][i][2]
+        faces[3][i][2] = temp[2][i][2]
+
+    process_frame(faces, cap, "R'")
+
+
+def f_cw(faces, cap): # rotate the front face clockwise
+    print('Rotate: F')
+    temp = copy.deepcopy(faces)
+
+    rotate_cw(faces, temp, 2)
+
+    for i in range(3):
+        faces[1][i][0] = temp[0][2][i]
+        faces[3][0][i] = temp[1][2-i][0]
+        faces[4][i][2] = temp[3][0][i]
+        faces[0][2][2-i] = temp[4][i][2]
      
-    process_frame(face, cap, "F")
+    process_frame(faces, cap, "F")
 
 
-def f_ccw(face, cap): # rotate the front face counter-clockwise
-    temp = copy.deepcopy(face)
+def f_ccw(faces, cap): # rotate the front face counter-clockwise
+    print('Rotate: F\'')
+    temp = copy.deepcopy(faces)
 
-    rotate_ccw(face, temp, 2)
+    rotate_ccw(faces, temp, 2)
 
     for i in range(3):
-        face[4][i][2] = temp[0][2][2-i]
-        face[3][0][i] = temp[4][i][2]
-        face[1][2-i][0] = temp[3][0][i]
-        face[0][2][i] = temp[1][i][0]
+        faces[4][i][2] = temp[0][2][2-i]
+        faces[3][0][i] = temp[4][i][2]
+        faces[1][2-i][0] = temp[3][0][i]
+        faces[0][2][i] = temp[1][i][0]
     
-    process_frame(face, cap, "F'")
+    process_frame(faces, cap, "F'")
 
 
-def d_cw(face, cap): # rotate the front face clockwise
-    temp = copy.deepcopy(face)
+def d_cw(faces, cap): # rotate the front face clockwise
+    print('Rotate: D')
+    temp = copy.deepcopy(faces)
 
-    rotate_cw(face, temp, 3)
+    rotate_cw(faces, temp, 3)
 
     for i in range(3):
-        face[1][2][i] = temp[2][2][i]
-        face[5][2][i] = temp[1][2][i]
-        face[4][2][i] = temp[5][2][i]
-        face[2][2][i] = temp[4][2][i]
+        faces[1][2][i] = temp[2][2][i]
+        faces[5][2][i] = temp[1][2][i]
+        faces[4][2][i] = temp[5][2][i]
+        faces[2][2][i] = temp[4][2][i]
     
-    process_frame(face, cap, "D")
+    process_frame(faces, cap, "D")
 
 
-def d_ccw(face, cap): # rotate the front face counter-clockwise
-    temp = copy.deepcopy(face)
+def d_ccw(faces, cap): # rotate the front face counter-clockwise
+    print('Rotate: D\'')
+    temp = copy.deepcopy(faces)
 
-    rotate_ccw(face, temp, 3)
+    rotate_ccw(faces, temp, 3)
 
     for i in range(3):
-        face[1][2][i] = temp[5][2][i]
-        face[5][2][i] = temp[4][2][i]
-        face[4][2][i] = temp[2][2][i]
-        face[2][2][i] = temp[1][2][i]
+        faces[1][2][i] = temp[5][2][i]
+        faces[5][2][i] = temp[4][2][i]
+        faces[4][2][i] = temp[2][2][i]
+        faces[2][2][i] = temp[1][2][i]
 
-    process_frame(face, cap, "D'")
+    process_frame(faces, cap, "D'")
 
 
-def l_cw(face, cap): # rotate the left face clockwise
-    temp = copy.deepcopy(face)
+def l_cw(faces, cap): # rotate the left face clockwise
+    print('Rotate: L')
+    temp = copy.deepcopy(faces)
     
-    rotate_cw(face, temp, 4)
+    rotate_cw(faces, temp, 4)
 
     for i in range(3):
-        face[0][i][0] = temp[5][2-i][2]
-        face[2][i][0] = temp[0][i][0]
-        face[3][i][0] = temp[2][i][0]
-        face[5][2-i][2] = temp[3][i][0] 
+        faces[0][i][0] = temp[5][2-i][2]
+        faces[2][i][0] = temp[0][i][0]
+        faces[3][i][0] = temp[2][i][0]
+        faces[5][2-i][2] = temp[3][i][0] 
 
-    process_frame(face, cap, "L") 
+    process_frame(faces, cap, "L") 
 
 
-def l_ccw(face, cap): # rotate the left face counter-clockwise
-    temp = copy.deepcopy(face)
+def l_ccw(faces, cap): # rotate the left face counter-clockwise
+    print('Rotate: L\'')
+    temp = copy.deepcopy(faces)
     
-    rotate_ccw(face, temp, 4)
+    rotate_ccw(faces, temp, 4)
 
     for i in range(3):
-        face[0][i][0] = temp[2][i][0]
-        face[5][2-i][2] = temp[0][i][0]
-        face[3][i][0] = temp[5][2-i][2]
-        face[2][i][0] = temp[3][i][0]
+        faces[0][i][0] = temp[2][i][0]
+        faces[5][2-i][2] = temp[0][i][0]
+        faces[3][i][0] = temp[5][2-i][2]
+        faces[2][i][0] = temp[3][i][0]
 
-    process_frame(face, cap, "L'") 
+    process_frame(faces, cap, "L'") 
 
 
-def b_cw(face, cap): # rotate the back face clockwise
-    temp = copy.deepcopy(face)
+def b_cw(faces, cap): # rotate the back face clockwise
+    print('Rotate: B')
+    temp = copy.deepcopy(faces)
 
-    rotate_cw(face, temp, 5)
+    rotate_cw(faces, temp, 5)
 
     for i in range(3):
-        face[4][i][0] = temp[0][0][2-i]
-        face[3][2][i] = temp[4][i][0]
-        face[1][2-i][2] = temp[3][2][i]
-        face[0][0][i] = temp[1][i][2] 
+        faces[4][i][0] = temp[0][0][2-i]
+        faces[3][2][i] = temp[4][i][0]
+        faces[1][2-i][2] = temp[3][2][i]
+        faces[0][0][i] = temp[1][i][2] 
 
-    process_frame(face, cap, "B") 
+    process_frame(faces, cap, "B") 
 
 
-def b_ccw(face, cap): # rotate the right face counter-clockwise
-    temp = copy.deepcopy(face)
+def b_ccw(faces, cap): # rotate the right face counter-clockwise
+    print('Rotate: B\'')
+    temp = copy.deepcopy(faces)
     
-    rotate_ccw(face, temp, 5)
+    rotate_ccw(faces, temp, 5)
 
     for i in range(3):
-        face[1][i][2] = temp[0][0][i]
-        face[3][2][i] = temp[1][2-i][2]
-        face[4][i][0] = temp[3][2][i]
-        face[0][0][2-i] = temp[4][i][0] 
+        faces[1][i][2] = temp[0][0][i]
+        faces[3][2][i] = temp[1][2-i][2]
+        faces[4][i][0] = temp[3][2][i]
+        faces[0][0][2-i] = temp[4][i][0] 
 
-    process_frame(face, cap, "B'") 
+    process_frame(faces, cap, "B'") 

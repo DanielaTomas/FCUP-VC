@@ -23,9 +23,8 @@ def is_square(approx): # check if a contour is a square
     return False
 
 
-#TODO trocar nome 'face' para 'faces'
-# face = []
-face = [[[["White",(0,0)],["White",(0,0)],["White",(0,0)]],[["White",(0,0)],["White",(0,0)],["White",(0,0)]],[["White",(0,0)],["White",(0,0)],["White",(0,0)]]],
+#faces = []
+faces = [[[["White",(0,0)],["White",(0,0)],["White",(0,0)]],[["White",(0,0)],["White",(0,0)],["White",(0,0)]],[["White",(0,0)],["White",(0,0)],["White",(0,0)]]],
         [[["Green",(0,0)],["Green",(0,0)],["Green",(0,0)]],[["Green",(0,0)],["Green",(0,0)],["Green",(0,0)]],[["Green",(0,0)],["Blue",(0,0)],["Green",(0,0)]]],
         [[["Orange",(0,0)],["Orange",(0,0)],["Orange",(0,0)]],[["Orange",(0,0)],["Orange",(0,0)],["Orange",(0,0)]],[["Blue",(0,0)],["Orange",(0,0)],["Orange",(0,0)]]],
         [[["Yellow",(0,0)],["Yellow",(0,0)],["Yellow",(0,0)]],[["Yellow",(0,0)],["Yellow",(0,0)],["Yellow",(0,0)]],[["Yellow",(0,0)],["Yellow",(0,0)],["Yellow",(0,0)]]],
@@ -37,7 +36,7 @@ face = [[[["White",(0,0)],["White",(0,0)],["White",(0,0)]],[["White",(0,0)],["Wh
 def find_face(frame): # find and highlight the Rubik's cube pieces
     
     hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-    global face
+    global faces
     face_colors = []
     groups = []
 
@@ -77,8 +76,8 @@ def find_face(frame): # find and highlight the Rubik's cube pieces
         for group in groups:
             group.sort(key=lambda x: x[1][0])
         
-        if not any(groups[1][1][0] in existing_groups[1][1][0] for existing_groups in face):
-            face.append(groups)
+        if not any(groups[1][1][0] in existing_groups[1][1][0] for existing_groups in faces):
+            faces.append(groups)
             print(f"{groups[1][1][0]} face detected!")
         else:
             print('draw find_face arrows')
@@ -88,66 +87,66 @@ def find_face(frame): # find and highlight the Rubik's cube pieces
 
 
 def color_to_position(color):
-    if face[0][1][1][0] == color:
+    if faces[0][1][1][0] == color:
         return "U"
-    elif face[1][1][1][0] == color:
+    elif faces[1][1][1][0] == color:
         return "R"
-    elif face[2][1][1][0] == color:
+    elif faces[2][1][1][0] == color:
         return "F"
-    elif face[3][1][1][0] == color:
+    elif faces[3][1][1][0] == color:
         return "D"
-    elif face[4][1][1][0] == color:
+    elif faces[4][1][1][0] == color:
         return "L"
-    elif face[5][1][1][0] == color:
+    elif faces[5][1][1][0] == color:
         return "B"
     return None
 
 
 def draw_solution(cap, solution):
-    global face
+    global faces
     for step in solution:
         if step == "U":
-            u_cw(face, cap)
+            u_cw(faces, cap)
         elif step == "U'":
-            u_ccw(face, cap)
+            u_ccw(faces, cap)
         elif step == "U2":
-            u_cw(face, cap)
-            u_cw(face, cap)
+            u_cw(faces, cap)
+            u_cw(faces, cap)
         elif step == "R":
-            r_cw(face, cap)
+            r_cw(faces, cap)
         elif step == "R'":
-            r_ccw(face, cap)
+            r_ccw(faces, cap)
         elif step == "R2":
-            r_cw(face, cap)
-            r_cw(face, cap)
+            r_cw(faces, cap)
+            r_cw(faces, cap)
         elif step == "F":
-            f_cw(face, cap)
+            f_cw(faces, cap)
         elif step == "F'":
-            f_ccw(face, cap)
+            f_ccw(faces, cap)
         elif step == "F2":
-            f_cw(face, cap)
-            f_cw(face, cap)
+            f_cw(faces, cap)
+            f_cw(faces, cap)
         elif step == "D":
-            d_cw(face, cap)
+            d_cw(faces, cap)
         elif step == "D'":
-            d_ccw(face, cap)
+            d_ccw(faces, cap)
         elif step == "D2":
-            d_cw(face, cap)
-            d_cw(face, cap)
+            d_cw(faces, cap)
+            d_cw(faces, cap)
         elif step == "L":
-            l_cw(face, cap)
+            l_cw(faces, cap)
         elif step == "L'":
-            l_ccw(face, cap)
+            l_ccw(faces, cap)
         elif step == "L2":
-            l_cw(face, cap)
-            l_cw(face, cap)
+            l_cw(faces, cap)
+            l_cw(faces, cap)
         elif step == "B":
-            b_cw(face, cap)
+            b_cw(faces, cap)
         elif step == "B'":
-            b_ccw(face, cap)
+            b_ccw(faces, cap)
         elif step == "B2":
-            b_cw(face, cap)
-            b_cw(face, cap)
+            b_cw(faces, cap)
+            b_cw(faces, cap)
 
 
 def main():
@@ -164,12 +163,12 @@ def main():
             print("Can\'t receive frame")
             break
 
-        if len(face) < 6:
+        if len(faces) < 6:
             cv2.imshow("Rubik\'s Cube Detection", find_face(frame))
         else:
             kociemba_str = ""
 
-            for groups in face:
+            for groups in faces:
                 print(f"{groups[1][1][0]} face")
                 for group in groups:
                     for color, coordinates in group:
