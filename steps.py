@@ -50,6 +50,129 @@ def find_face(frame): #TODO tirar daqui e juntar com a do main
     return frame, groups
 
 
+def compare_faces(face1, face2):
+    for i in range(3):
+        for j in range(3):
+            color1, _ = face1[i][j]
+            color2, _ = face2[i][j]
+            
+            if color1 != color2:
+                return False
+    return True
+
+
+def draw_arrow(frame, start, end, color, arrow_thickness):
+    cv2.arrowedLine(frame, start, end, color, arrow_thickness, tipLength=0.2)
+
+
+def x_arrows(frame, current_face, var, arrow_length, arrow_color, arrow_thickness):
+    x_start, y_start = current_face[0][1][1][0] - var, current_face[0][1][1][1] + var
+    x_end, y_end = x_start + arrow_length, y_start
+    draw_arrow(frame, (x_end, y_start), (x_start, y_end), arrow_color, arrow_thickness)
+    x_start, y_start = current_face[1][1][1][0] - var, current_face[1][1][1][1] + var
+    x_end, y_end = x_start + arrow_length, y_start
+    draw_arrow(frame, (x_end, y_start), (x_start, y_end), arrow_color, arrow_thickness)
+    x_start, y_start = current_face[2][1][1][0] - var, current_face[2][1][1][1] + var
+    x_end, y_end = x_start + arrow_length, y_start
+    draw_arrow(frame, (x_end, y_start), (x_start, y_end), arrow_color, arrow_thickness)
+
+
+def f_b_arrows(frame, current_face, var, arrow_length, arrow_color, arrow_thickness, step):
+        arrow_length -= 50
+        x_start, y_start = current_face[0][1][1][0] + var, current_face[1][2][1][1]
+        x_end, y_end = x_start + arrow_length, y_start - arrow_length
+        draw_arrow(frame, (x_start, y_end) if step == "F" or step == "B" else (x_end, y_start), (x_end, y_start) if step == "F" or step == "B"  else (x_start, y_end), arrow_color, arrow_thickness)
+        x_start -= var
+        x_end = x_start - arrow_length
+        draw_arrow(frame, (x_end, y_start) if step == "F" or step == "B"  else (x_start, y_end), (x_start, y_end) if step == "F" or step == "B"  else (x_end, y_start), arrow_color, arrow_thickness)
+        y_start += var
+        y_end = y_start + arrow_length
+        draw_arrow(frame, (x_start, y_end) if step == "F" or step == "B"  else (x_end, y_start), (x_end, y_start) if step == "F" or step == "B"  else (x_start, y_end), arrow_color, arrow_thickness)
+        x_start += var
+        x_end = x_start + arrow_length
+        draw_arrow(frame, (x_end, y_start) if step == "F" or step == "B"  else (x_start, y_end), (x_start, y_end) if step == "F" or step == "B"  else (x_end, y_start), arrow_color, arrow_thickness)
+
+
+def draw_arrows(current_face, b_face, frame, step):
+    arrow_length = 100
+    arrow_thickness = 4
+    arrow_color = (0, 0, 255)
+    var = 25
+
+    if(step == "U" or step == "U'"):
+        x_start, y_start = current_face[0][1][1][0] - var, current_face[0][1][1][1] + var
+        x_end, y_end = x_start + arrow_length, y_start
+        draw_arrow(frame, (x_end, y_start) if step == "U" else (x_start, y_start), (x_start, y_end) if step == "U" else (x_end, y_end), arrow_color, arrow_thickness)
+
+    elif(step == "R" or step == "R'"):
+        x_start, y_start = current_face[2][2][1][0] + var, current_face[2][2][1][1]
+        x_end, y_end = x_start, y_start - arrow_length
+        draw_arrow(frame, (x_start, y_start) if step == "R" else (x_start, y_end), (x_end, y_end) if step == "R" else (x_end, y_start), arrow_color, arrow_thickness)
+
+    elif(step == "F" or step == "F'"):
+        f_b_arrows(frame, current_face, var, arrow_length, arrow_color, arrow_thickness, step)
+
+    elif(step == "D" or step == "D'"):
+        x_start, y_start = current_face[2][1][1][0] - var, current_face[2][1][1][1] + var
+        x_end, y_end = x_start + arrow_length, y_start
+        draw_arrow(frame, (x_end, y_start) if step == "D'" else (x_start, y_start), (x_start, y_end) if step == "D'" else (x_end, y_end), arrow_color, arrow_thickness)
+
+    elif(step == "L" or step == "L'"):
+        x_start, y_start = current_face[2][0][1][0] + var, current_face[2][0][1][1]
+        x_end, y_end = x_start, y_start - arrow_length
+        draw_arrow(frame, (x_start, y_start) if step == "L'" else (x_start, y_end), (x_end, y_end) if step == "L'" else (x_end, y_start), arrow_color, arrow_thickness)
+
+    elif(step == "B" or step == "B'"):
+        if not compare_faces(current_face, b_face):
+            x_arrows(frame, current_face, var, arrow_length, arrow_color, arrow_thickness)
+        else:
+            f_b_arrows(frame, current_face, var, arrow_length, arrow_color, arrow_thickness, step)
+
+    else:
+        x_arrows(frame, current_face, var, arrow_length, arrow_color, arrow_thickness)
+
+      
+def process_frame(faces, cap, step):
+    #TODO Apagar isto depois ---- debug
+    for groups in faces:
+        print(f"{groups[1][1][0]} face")
+        for group in groups:
+            for color, coordinates in group:
+                print(f"  Color: {color}, Coordinates: {coordinates}")
+    #----
+    while True:
+            ret, frame = cap.read()
+
+            if not ret:
+                print("Can\'t receive frame")
+                exit()
+
+            frame_with_cube, current_face = find_face(frame)
+            cv2.imshow("Rubik\'s Cube Detection", frame_with_cube)
+
+            if current_face != []:
+                #TODO testar melhor
+                if step == 'B' or step == 'B\'':
+                    if compare_faces(current_face,faces[5]):
+                        draw_arrows(current_face, faces, frame_with_cube, 'y')
+                        cv2.imshow("Rubik\'s Cube Detection", frame_with_cube)
+                    else:
+                        draw_arrows(current_face, faces[5], frame_with_cube, step)
+                        cv2.imshow("Rubik\'s Cube Detection", frame_with_cube)
+                else:
+                    if compare_faces(current_face, faces[2]):
+                        break
+                    else:
+                        draw_arrows(current_face, faces[5], frame_with_cube, step)
+                        cv2.imshow("Rubik\'s Cube Detection", frame_with_cube)
+                
+
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                cap.release()
+                cv2.destroyAllWindows()
+                exit()
+
+
 def rotate_cw(faces, temp, n):
     faces[n][0][0] = temp[n][2][0]
     faces[n][0][1] = temp[n][1][0]
@@ -74,95 +197,6 @@ def rotate_ccw(faces, temp, n):
 
     faces[n][2][0] = temp[n][0][0]
     faces[n][2][1] = temp[n][1][0]
-
-
-def compare_faces(face1, face2):
-    for i in range(3):
-        for j in range(3):
-            color1, _ = face1[i][j]
-            color2, _ = face2[i][j]
-            
-            if color1 != color2:
-                return False
-    return True
-
-
-def draw_arrow(frame, start, end, color, thickness):
-    cv2.arrowedLine(frame, start, end, color, thickness, tipLength=0.2)
-
-    
-def draw_arrows(face, frame, step): #TODO draw B arrows
-    arrow_length = 100
-    arrow_thickness = 4
-    arrow_color = (0, 0, 255)
-    var = 25
-
-    if(step == "U" or step == "U'"):
-        x_start, y_start = face[0][1][1][0] - var, face[0][1][1][1] + var
-        x_end, y_end = x_start + arrow_length, y_start
-        draw_arrow(frame, (x_end, y_start) if step == "U" else (x_start, y_start), (x_start, y_end) if step == "U" else (x_end, y_end), arrow_color, arrow_thickness)
-
-    elif(step == "R" or step == "R'"):
-        x_start, y_start = face[2][2][1][0] + var, face[2][2][1][1]
-        x_end, y_end = x_start, y_start - arrow_length
-        draw_arrow(frame, (x_start, y_start) if step == "R" else (x_start, y_end), (x_end, y_end) if step == "R" else (x_end, y_start), arrow_color, arrow_thickness)
-
-    elif(step == "F" or step == "F'"):
-        arrow_length -= 50
-        x_start, y_start = face[0][1][1][0] + var, face[1][2][1][1]
-        x_end, y_end = x_start + arrow_length, y_start - arrow_length
-
-        draw_arrow(frame, (x_start, y_end) if step == "F" else (x_end, y_start), (x_end, y_start) if step == "F" else (x_start, y_end), arrow_color, arrow_thickness)
-        x_start -= var
-        x_end = x_start - arrow_length
-        draw_arrow(frame, (x_end, y_start) if step == "F" else (x_start, y_end), (x_start, y_end) if step == "F" else (x_end, y_start), arrow_color, arrow_thickness)
-        y_start += var
-        y_end = y_start + arrow_length
-        draw_arrow(frame, (x_start, y_end) if step == "F" else (x_end, y_start), (x_end, y_start) if step == "F" else (x_start, y_end), arrow_color, arrow_thickness)
-        x_start += var
-        x_end = x_start + arrow_length
-        draw_arrow(frame, (x_end, y_start) if step == "F" else (x_start, y_end), (x_start, y_end) if step == "F" else (x_end, y_start), arrow_color, arrow_thickness)
-
-    elif(step == "D" or step == "D'"):
-        x_start, y_start = face[2][1][1][0] - var, face[2][1][1][1] + var
-        x_end, y_end = x_start + arrow_length, y_start
-        draw_arrow(frame, (x_end, y_start) if step == "D'" else (x_start, y_start), (x_start, y_end) if step == "D'" else (x_end, y_end), arrow_color, arrow_thickness)
-
-    elif(step == "L" or step == "L'"):
-        x_start, y_start = face[2][0][1][0] + var, face[2][0][1][1]
-        x_end, y_end = x_start, y_start - arrow_length
-        draw_arrow(frame, (x_start, y_start) if step == "L'" else (x_start, y_end), (x_end, y_end) if step == "L'" else (x_end, y_start), arrow_color, arrow_thickness)
-
-      
-def process_frame(faces, cap, step):
-    #TODO Apagar isto depois ---- debug
-    for groups in faces:
-        print(f"{groups[1][1][0]} face")
-        for group in groups:
-            for color, coordinates in group:
-                print(f"  Color: {color}, Coordinates: {coordinates}")
-    #----
-    while True:
-            ret, frame = cap.read()
-
-            if not ret:
-                print("Can\'t receive frame")
-                exit()
-
-            frame_with_cube, current_face = find_face(frame)
-            cv2.imshow("Rubik\'s Cube Detection", frame_with_cube)
-
-            if current_face != []:
-                if compare_faces(current_face,faces[2]):
-                    break
-                else:
-                    draw_arrows(current_face, frame_with_cube, step)
-                    cv2.imshow("Rubik\'s Cube Detection", frame_with_cube)
-
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                cap.release()
-                cv2.destroyAllWindows()
-                exit()
 
 
 def u_cw(faces, cap): # rotate the upper face clockwise
