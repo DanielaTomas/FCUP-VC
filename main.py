@@ -5,6 +5,7 @@ from steps import *
 
 # HSV format
 color_ranges = [
+    ((0, 100, 100), (4, 255, 255), "Red"),
     ((160, 100, 100), (180, 255, 255), "Red"),
     ((30, 100, 100), (99, 255, 255), "Green"),
     ((100, 100, 100), (130, 255, 255), "Blue"),
@@ -23,7 +24,8 @@ def is_square(approx): # check if a contour is a square
     return False
 
 
-#faces = []
+faces = []
+'''
 faces = [[[["White",(0,0)],["White",(0,0)],["White",(0,0)]],[["White",(0,0)],["White",(0,0)],["White",(0,0)]],[["White",(0,0)],["White",(0,0)],["White",(0,0)]]],
         [[["Green",(0,0)],["Green",(0,0)],["Green",(0,0)]],[["Green",(0,0)],["Green",(0,0)],["Green",(0,0)]],[["Green",(0,0)],["Blue",(0,0)],["Green",(0,0)]]],
         [[["Orange",(0,0)],["Orange",(0,0)],["Orange",(0,0)]],[["Orange",(0,0)],["Orange",(0,0)],["Orange",(0,0)]],[["Blue",(0,0)],["Orange",(0,0)],["Orange",(0,0)]]],
@@ -31,19 +33,45 @@ faces = [[[["White",(0,0)],["White",(0,0)],["White",(0,0)]],[["White",(0,0)],["W
         [[["Blue",(0,0)],["Blue",(0,0)],["Blue",(0,0)]],[["Blue",(0,0)],["Blue",(0,0)],["Blue",(0,0)]],[["Orange",(0,0)],["Green",(0,0)],["Red",(0,0)]]],
         [[["Red",(0,0)],["Red",(0,0)],["Red",(0,0)]],[["Red",(0,0)],["Red",(0,0)],["Red",(0,0)]],[["Red",(0,0)],["Red",(0,0)],["Blue",(0,0)]]]
         ]
+'''
+
+def white_balancing(frame): # white balancing on the input image frame
+    r, g, b = cv2.split(frame)
+    
+    avg_r = np.mean(r)
+    avg_g = np.mean(g)
+    avg_b = np.mean(b)
+    
+    avg_value = (avg_r + avg_g + avg_b) / 3
+    
+    scale_r = avg_value / avg_r
+    scale_g = avg_value / avg_g
+    scale_b = avg_value / avg_b
+    
+    balanced_r = cv2.convertScaleAbs(r, alpha=scale_r, beta=0)
+    balanced_g = cv2.convertScaleAbs(g, alpha=scale_g, beta=0)
+    balanced_b = cv2.convertScaleAbs(b, alpha=scale_b, beta=0)
+    
+    result = cv2.merge([balanced_r, balanced_g, balanced_b])
+    
+    return result
 
 
 def find_face(frame): # find and highlight the Rubik's cube pieces
-    
+    frame = white_balancing(frame)
     hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
     global faces
     face_colors = []
     groups = []
-
     squares_found = 0
     
+    #result = np.zeros_like(frame)
+
     for lower_range, upper_range, color_name in color_ranges:
         mask = cv2.inRange(hsv_frame, np.array(lower_range), np.array(upper_range))
+        #res = cv2.bitwise_and(frame, frame, mask=mask)
+        #cv2.imshow(color_name,res)
+        #result = cv2.add(result, res)
 
         blurred_frame = cv2.GaussianBlur(mask, (5, 5), 0)
 
@@ -54,6 +82,9 @@ def find_face(frame): # find and highlight the Rubik's cube pieces
         edges = cv2.Canny(blurred_frame, 50, 150)
 
         contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        #cv2.imshow("Combined Result", result)
+        #cv2.drawContours(frame, contours=contours, contourIdx=-1, color=(0, 255, 0), thickness=2, lineType=cv2.LINE_AA)
 
         for contour in contours:
             area = cv2.contourArea(contour)
@@ -79,9 +110,8 @@ def find_face(frame): # find and highlight the Rubik's cube pieces
         if not any(groups[1][1][0] in existing_groups[1][1][0] for existing_groups in faces):
             faces.append(groups)
             print(f"{groups[1][1][0]} face detected!")
-        else:
-            print('draw find_face arrows')
-            #TODO draw arrows
+        #else:
+            #TODO draw arrows 
             
     return frame
 
@@ -149,6 +179,37 @@ def draw_solution(cap, solution):
             b_cw(faces, cap)
 
 
+def draw_square(frame, top_left, bottom_right, label):
+    cv2.rectangle(frame, top_left, bottom_right, (0, 0, 0), -1)
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    cv2.putText(frame, label, (top_left[0] + 10, bottom_right[1] - 10), font, 1, (255, 255, 255), 2)
+    cv2.rectangle(frame, top_left, bottom_right, (255, 255, 255), 2)
+    for i in range(1, 3):
+        cv2.line(frame, (top_left[0] + i * (bottom_right[0] - top_left[0]) // 3, top_left[1]),
+                 (top_left[0] + i * (bottom_right[0] - top_left[0]) // 3, bottom_right[1]), (255, 255, 255), 2)
+        cv2.line(frame, (top_left[0], top_left[1] + i * (bottom_right[1] - top_left[1]) // 3),
+                 (bottom_right[0], top_left[1] + i * (bottom_right[1] - top_left[1]) // 3), (255, 255, 255), 2)
+
+
+def draw_cube():
+    cube_size = 450
+    square_size = cube_size // 3
+    frame = np.ones((cube_size, cube_size + square_size, 3), dtype=np.uint8) * 255
+    label_positions = {
+        'U  0': (square_size * 3 // 2, square_size // 2),
+        'L  4': (square_size // 2, square_size * 3 // 2),
+        'F  2': (square_size * 3 // 2, square_size * 3 // 2),
+        'R  1': (square_size * 5 // 2, square_size * 3 // 2),
+        'B  5': (square_size * 7 // 2, square_size * 3 // 2),
+        'D  3': (square_size * 3 // 2, square_size * 5 // 2)
+    }
+    for label, position in label_positions.items():
+        top_left = (position[0] - square_size // 2, position[1] - square_size // 2)
+        bottom_right = (position[0] + square_size // 2, position[1] + square_size // 2)
+        draw_square(frame, top_left, bottom_right, label)
+    cv2.imshow("Open Cube", frame)
+
+
 def main():
 
     cap = cv2.VideoCapture(0) # initialize the camera
@@ -156,6 +217,8 @@ def main():
     if not cap.isOpened():
         print("Can\'t capture camera")
         exit()
+
+    draw_cube()
 
     while True:
         ret, frame = cap.read()
