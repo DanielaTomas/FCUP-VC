@@ -14,6 +14,8 @@ color_ranges = [
     ((5, 100, 100), (20, 255, 255), "Orange")
 ]
 
+colors = []
+
 
 def is_square(approx): # check if a contour is a square
     if len(approx) == 4:
@@ -59,7 +61,8 @@ def white_balancing(frame): # white balancing on the input image frame
 
 def find_face(frame): # find and highlight the Rubik's cube pieces
     frame = white_balancing(frame)
-    hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    lab_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2Lab)
+    #print(format(lab_frame))
     global faces
     face_colors = []
     groups = []
@@ -67,8 +70,8 @@ def find_face(frame): # find and highlight the Rubik's cube pieces
     
     #result = np.zeros_like(frame)
 
-    for lower_range, upper_range, color_name in color_ranges:
-        mask = cv2.inRange(hsv_frame, np.array(lower_range), np.array(upper_range))
+    for lower_range, upper_range, color_name in colors:
+        mask = cv2.inRange(lab_frame, np.array(lower_range), np.array(upper_range))
         #res = cv2.bitwise_and(frame, frame, mask=mask)
         #cv2.imshow(color_name,res)
         #result = cv2.add(result, res)
@@ -76,6 +79,7 @@ def find_face(frame): # find and highlight the Rubik's cube pieces
         blurred_frame = cv2.GaussianBlur(mask, (5, 5), 0)
 
         kernel = np.ones((5, 5), np.uint8)
+
         blurred_frame = cv2.morphologyEx(blurred_frame, cv2.MORPH_OPEN, kernel)
         blurred_frame = cv2.morphologyEx(blurred_frame, cv2.MORPH_CLOSE, kernel)
 
@@ -88,7 +92,7 @@ def find_face(frame): # find and highlight the Rubik's cube pieces
 
         for contour in contours:
             area = cv2.contourArea(contour)
-            if area > 500 and area < 3000:
+            if area > 500 and area < 2500:
                 epsilon = 0.02 * cv2.arcLength(contour, True)
                 approx = cv2.approxPolyDP(contour, epsilon, True)
                 
@@ -210,21 +214,77 @@ def draw_cube():
     cv2.imshow("Open Cube", frame)
 
 
-def main():
+color_names = ["Red", "Green", "Blue", "Yellow", "White", "Orange"]
+click_count = 0
+def showPixelValue(event,x,y,flags,param): # handle mouse click events for color selection
+    global frame, colors, click_count
 
+    frame_height, frame_width = frame.shape[:2]
+
+    if x > frame_width - 1 or y > frame_height - 1: return
+    if event == cv2.EVENT_LBUTTONDOWN:
+        bgr = frame[y, x]
+        lab = cv2.cvtColor(np.uint8([[bgr]]), cv2.COLOR_BGR2LAB)[0][0]
+        print(lab)
+        if click_count == 0: # Red
+            l_threshold, a_threshold, b_threshold = 25, 20, 20
+        elif click_count == 1: # Green
+            l_threshold, a_threshold, b_threshold = 25, 20, 20
+        elif click_count == 2: # Blue
+            l_threshold, a_threshold, b_threshold = 25, 20, 20
+        elif click_count == 3: # Yellow
+            l_threshold, a_threshold, b_threshold = 25, 20, 20
+        elif click_count == 4: # White
+            l_threshold, a_threshold, b_threshold = 25, 20, 20
+        else: # Orange
+             l_threshold, a_threshold, b_threshold = 25, 20, 20
+        colors.append((
+            (max(0, lab[0] - l_threshold), max(0, lab[1] - a_threshold), max(0, lab[2] - b_threshold)),
+            (min(255, lab[0] + l_threshold), min(255, lab[1] + a_threshold), min(255, lab[2] + b_threshold)),
+            color_names[click_count]
+        ))
+        click_count += 1
+    cv2.imshow("Rubik\'s Cube Detection", frame)
+
+def dummy_callback(event, x, y, flags, param):
+    pass
+
+def main():
+    global frame
     cap = cv2.VideoCapture(0) # initialize the camera
 
     if not cap.isOpened():
         print("Can\'t capture camera")
         exit()
 
-    draw_cube()
 
     while True:
         ret, frame = cap.read()
         if not ret:
             print("Can\'t receive frame")
             break
+        
+        if click_count >= 6: 
+            cv2.setMouseCallback("Rubik\'s Cube Detection", dummy_callback)
+            break
+        else:
+            frame = white_balancing(frame)
+            cv2.namedWindow("Rubik\'s Cube Detection")
+            cv2.setMouseCallback("Rubik\'s Cube Detection", showPixelValue)
+            cv2.putText(frame, f"Click on a {color_names[click_count]} piece with your mouse", (60,50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,0,0),2)
+            #cv2.imshow("Rubik\'s Cube Detection", find_face(frame))
+            cv2.imshow("Rubik\'s Cube Detection", frame)
+        
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            exit()
+
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            print("Can\'t receive frame")
+            break
+
+        draw_cube()
 
         if len(faces) < 6:
             cv2.imshow("Rubik\'s Cube Detection", find_face(frame))
