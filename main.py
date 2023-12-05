@@ -140,47 +140,47 @@ def draw_solution(cap, solution):
     global faces
     for step in solution:
         if step == "U":
-            u_cw(faces, cap)
+            u_cw(faces, cap, colors)
         elif step == "U'":
-            u_ccw(faces, cap)
+            u_ccw(faces, cap, colors)
         elif step == "U2":
-            u_cw(faces, cap)
-            u_cw(faces, cap)
+            u_cw(faces, cap, colors)
+            u_cw(faces, cap, colors)
         elif step == "R":
-            r_cw(faces, cap)
+            r_cw(faces, cap, colors)
         elif step == "R'":
-            r_ccw(faces, cap)
+            r_ccw(faces, cap, colors)
         elif step == "R2":
-            r_cw(faces, cap)
-            r_cw(faces, cap)
+            r_cw(faces, cap, colors)
+            r_cw(faces, cap, colors)
         elif step == "F":
-            f_cw(faces, cap)
+            f_cw(faces, cap, colors)
         elif step == "F'":
-            f_ccw(faces, cap)
+            f_ccw(faces, cap, colors)
         elif step == "F2":
-            f_cw(faces, cap)
-            f_cw(faces, cap)
+            f_cw(faces, cap, colors)
+            f_cw(faces, cap, colors)
         elif step == "D":
-            d_cw(faces, cap)
+            d_cw(faces, cap, colors)
         elif step == "D'":
-            d_ccw(faces, cap)
+            d_ccw(faces, cap, colors)
         elif step == "D2":
-            d_cw(faces, cap)
-            d_cw(faces, cap)
+            d_cw(faces, cap, colors)
+            d_cw(faces, cap, colors)
         elif step == "L":
-            l_cw(faces, cap)
+            l_cw(faces, cap, colors)
         elif step == "L'":
-            l_ccw(faces, cap)
+            l_ccw(faces, cap, colors)
         elif step == "L2":
-            l_cw(faces, cap)
-            l_cw(faces, cap)
+            l_cw(faces, cap, colors)
+            l_cw(faces, cap, colors)
         elif step == "B":
-            b_cw(faces, cap)
+            b_cw(faces, cap, colors)
         elif step == "B'":
-            b_ccw(faces, cap)
+            b_ccw(faces, cap, colors)
         elif step == "B2":
-            b_cw(faces, cap)
-            b_cw(faces, cap)
+            b_cw(faces, cap, colors)
+            b_cw(faces, cap, colors)
 
 
 def draw_square(frame, top_left, bottom_right, label):
@@ -227,17 +227,17 @@ def showPixelValue(event,x,y,flags,param): # handle mouse click events for color
         lab = cv2.cvtColor(np.uint8([[bgr]]), cv2.COLOR_BGR2LAB)[0][0]
         print(lab)
         if click_count == 0: # Red
-            l_threshold, a_threshold, b_threshold = 25, 20, 20
+            l_threshold, a_threshold, b_threshold = 30, 20, 20
         elif click_count == 1: # Green
-            l_threshold, a_threshold, b_threshold = 25, 20, 20
+            l_threshold, a_threshold, b_threshold = 30, 20, 20
         elif click_count == 2: # Blue
-            l_threshold, a_threshold, b_threshold = 25, 20, 20
+            l_threshold, a_threshold, b_threshold = 30, 20, 20
         elif click_count == 3: # Yellow
-            l_threshold, a_threshold, b_threshold = 25, 20, 20
+            l_threshold, a_threshold, b_threshold = 30, 20, 20
         elif click_count == 4: # White
-            l_threshold, a_threshold, b_threshold = 25, 20, 20
+            l_threshold, a_threshold, b_threshold = 30, 20, 20
         else: # Orange
-             l_threshold, a_threshold, b_threshold = 25, 20, 20
+             l_threshold, a_threshold, b_threshold = 40, 20, 20
         colors.append((
             (max(0, lab[0] - l_threshold), max(0, lab[1] - a_threshold), max(0, lab[2] - b_threshold)),
             (min(255, lab[0] + l_threshold), min(255, lab[1] + a_threshold), min(255, lab[2] + b_threshold)),
@@ -284,7 +284,7 @@ def main():
             print("Can\'t receive frame")
             break
 
-        draw_cube()
+        #draw_cube()
 
         if len(faces) < 6:
             cv2.imshow("Rubik\'s Cube Detection", find_face(frame))
