@@ -26,7 +26,7 @@ def find_face(frame, colors): #TODO tirar daqui e juntar com a do main
 
         for contour in contours:
             area = cv2.contourArea(contour)
-            if area > 500 and area < 3000:
+            if area > 500 and area < 2500:
                 epsilon = 0.02 * cv2.arcLength(contour, True)
                 approx = cv2.approxPolyDP(contour, epsilon, True)
                 
@@ -133,16 +133,8 @@ def draw_arrows(current_face, b_face, frame, step):
 
       
 def process_frame(faces, cap, step, colors):
-    #TODO Apagar isto depois ---- debug
-    for groups in faces:
-        print(f"{groups[1][1][0]} face")
-        for group in groups:
-            for color, coordinates in group:
-                print(f"  Color: {color}, Coordinates: {coordinates}")
-    #----
     while True:
             ret, frame = cap.read()
-
             if not ret:
                 print("Can\'t receive frame")
                 exit()
@@ -166,7 +158,6 @@ def process_frame(faces, cap, step, colors):
                         draw_arrows(current_face, faces[5], frame_with_cube, step)
                         cv2.imshow("Rubik\'s Cube Detection", frame_with_cube)
                 
-
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 cap.release()
                 cv2.destroyAllWindows()
