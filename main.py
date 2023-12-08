@@ -155,37 +155,6 @@ def draw_solution(cap, solution):
             b_cw(faces, cap, colors)
 
 
-def draw_square(frame, top_left, bottom_right, label):
-    cv2.rectangle(frame, top_left, bottom_right, (0, 0, 0), -1)
-    font = cv2.FONT_HERSHEY_SIMPLEX
-    cv2.putText(frame, label, (top_left[0] + 10, bottom_right[1] - 10), font, 1, (255, 255, 255), 2)
-    cv2.rectangle(frame, top_left, bottom_right, (255, 255, 255), 2)
-    for i in range(1, 3):
-        cv2.line(frame, (top_left[0] + i * (bottom_right[0] - top_left[0]) // 3, top_left[1]),
-                 (top_left[0] + i * (bottom_right[0] - top_left[0]) // 3, bottom_right[1]), (255, 255, 255), 2)
-        cv2.line(frame, (top_left[0], top_left[1] + i * (bottom_right[1] - top_left[1]) // 3),
-                 (bottom_right[0], top_left[1] + i * (bottom_right[1] - top_left[1]) // 3), (255, 255, 255), 2)
-
-
-def draw_cube():
-    cube_size = 450
-    square_size = cube_size // 3
-    frame = np.ones((cube_size, cube_size + square_size, 3), dtype=np.uint8) * 255
-    label_positions = {
-        'U  1': (square_size * 3 // 2, square_size // 2),
-        'L  5': (square_size // 2, square_size * 3 // 2),
-        'F  3': (square_size * 3 // 2, square_size * 3 // 2),
-        'R  2': (square_size * 5 // 2, square_size * 3 // 2),
-        'B  6': (square_size * 7 // 2, square_size * 3 // 2),
-        'D  4': (square_size * 3 // 2, square_size * 5 // 2)
-    }
-    for label, position in label_positions.items():
-        top_left = (position[0] - square_size // 2, position[1] - square_size // 2)
-        bottom_right = (position[0] + square_size // 2, position[1] + square_size // 2)
-        draw_square(frame, top_left, bottom_right, label)
-    cv2.imshow("Open Cube", frame)
-
-
 def colors_append(lab, l_threshold, a_threshold, b_threshold):
             colors.append((
             (max(0, lab[0] - l_threshold), max(0, lab[1] - a_threshold), max(0, lab[2] - b_threshold)),
@@ -257,8 +226,6 @@ def main():
         if not ret:
             print("Can\'t receive frame")
             break
-
-        #draw_cube()
 
         if len(faces) < 6:
             cv2.imshow("Rubik\'s Cube Detection", find_face(frame))
