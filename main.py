@@ -3,16 +3,11 @@ import numpy as np
 import kociemba
 from steps import *
 
-# HSV format
-color_ranges = [
-    ((0, 100, 100), (4, 255, 255), "Red"),
-    ((160, 100, 100), (180, 255, 255), "Red"),
-    ((30, 100, 100), (99, 255, 255), "Green"),
-    ((100, 100, 100), (130, 255, 255), "Blue"),
-    ((21, 100, 100), (35, 255, 255), "Yellow"),
-    ((0, 0, 120), (179, 50, 255), "White"),
-    ((5, 100, 100), (20, 255, 255), "Orange")
-]
+
+color_names = ["Red", "Green", "Blue", "Yellow", "White", "Orange"]
+colors = []
+click_count = 0
+faces = []
 
 
 def is_square(approx): # check if a contour is a square
@@ -23,17 +18,6 @@ def is_square(approx): # check if a contour is a square
             return True
     return False
 
-
-faces = []
-'''
-faces = [[[["White",(0,0)],["White",(0,0)],["White",(0,0)]],[["White",(0,0)],["White",(0,0)],["White",(0,0)]],[["White",(0,0)],["White",(0,0)],["White",(0,0)]]],
-        [[["Green",(0,0)],["Green",(0,0)],["Green",(0,0)]],[["Green",(0,0)],["Green",(0,0)],["Green",(0,0)]],[["Green",(0,0)],["Blue",(0,0)],["Green",(0,0)]]],
-        [[["Orange",(0,0)],["Orange",(0,0)],["Orange",(0,0)]],[["Orange",(0,0)],["Orange",(0,0)],["Orange",(0,0)]],[["Blue",(0,0)],["Orange",(0,0)],["Orange",(0,0)]]],
-        [[["Yellow",(0,0)],["Yellow",(0,0)],["Yellow",(0,0)]],[["Yellow",(0,0)],["Yellow",(0,0)],["Yellow",(0,0)]],[["Yellow",(0,0)],["Yellow",(0,0)],["Yellow",(0,0)]]],
-        [[["Blue",(0,0)],["Blue",(0,0)],["Blue",(0,0)]],[["Blue",(0,0)],["Blue",(0,0)],["Blue",(0,0)]],[["Orange",(0,0)],["Green",(0,0)],["Red",(0,0)]]],
-        [[["Red",(0,0)],["Red",(0,0)],["Red",(0,0)]],[["Red",(0,0)],["Red",(0,0)],["Red",(0,0)]],[["Red",(0,0)],["Red",(0,0)],["Blue",(0,0)]]]
-        ]
-'''
 
 def white_balancing(frame): # white balancing on the input image frame
     r, g, b = cv2.split(frame)
@@ -59,19 +43,14 @@ def white_balancing(frame): # white balancing on the input image frame
 
 def find_face(frame): # find and highlight the Rubik's cube pieces
     frame = white_balancing(frame)
-    hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    lab_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2Lab)
     global faces
     face_colors = []
     groups = []
     squares_found = 0
-    
-    #result = np.zeros_like(frame)
 
-    for lower_range, upper_range, color_name in color_ranges:
-        mask = cv2.inRange(hsv_frame, np.array(lower_range), np.array(upper_range))
-        #res = cv2.bitwise_and(frame, frame, mask=mask)
-        #cv2.imshow(color_name,res)
-        #result = cv2.add(result, res)
+    for lower_range, upper_range, color_name in colors:
+        mask = cv2.inRange(lab_frame, np.array(lower_range), np.array(upper_range))
 
         blurred_frame = cv2.GaussianBlur(mask, (5, 5), 0)
 
@@ -83,12 +62,9 @@ def find_face(frame): # find and highlight the Rubik's cube pieces
 
         contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        #cv2.imshow("Combined Result", result)
-        #cv2.drawContours(frame, contours=contours, contourIdx=-1, color=(0, 255, 0), thickness=2, lineType=cv2.LINE_AA)
-
         for contour in contours:
             area = cv2.contourArea(contour)
-            if area > 500 and area < 3000:
+            if area > 500 and area < 2500:
                 epsilon = 0.02 * cv2.arcLength(contour, True)
                 approx = cv2.approxPolyDP(contour, epsilon, True)
                 
@@ -136,89 +112,114 @@ def draw_solution(cap, solution):
     global faces
     for step in solution:
         if step == "U":
-            u_cw(faces, cap)
+            u_cw(faces, cap, colors)
         elif step == "U'":
-            u_ccw(faces, cap)
+            u_ccw(faces, cap, colors)
         elif step == "U2":
-            u_cw(faces, cap)
-            u_cw(faces, cap)
+            u_cw(faces, cap, colors)
+            u_cw(faces, cap, colors)
         elif step == "R":
-            r_cw(faces, cap)
+            r_cw(faces, cap, colors)
         elif step == "R'":
-            r_ccw(faces, cap)
+            r_ccw(faces, cap, colors)
         elif step == "R2":
-            r_cw(faces, cap)
-            r_cw(faces, cap)
+            r_cw(faces, cap, colors)
+            r_cw(faces, cap, colors)
         elif step == "F":
-            f_cw(faces, cap)
+            f_cw(faces, cap, colors)
         elif step == "F'":
-            f_ccw(faces, cap)
+            f_ccw(faces, cap, colors)
         elif step == "F2":
-            f_cw(faces, cap)
-            f_cw(faces, cap)
+            f_cw(faces, cap, colors)
+            f_cw(faces, cap, colors)
         elif step == "D":
-            d_cw(faces, cap)
+            d_cw(faces, cap, colors)
         elif step == "D'":
-            d_ccw(faces, cap)
+            d_ccw(faces, cap, colors)
         elif step == "D2":
-            d_cw(faces, cap)
-            d_cw(faces, cap)
+            d_cw(faces, cap, colors)
+            d_cw(faces, cap, colors)
         elif step == "L":
-            l_cw(faces, cap)
+            l_cw(faces, cap, colors)
         elif step == "L'":
-            l_ccw(faces, cap)
+            l_ccw(faces, cap, colors)
         elif step == "L2":
-            l_cw(faces, cap)
-            l_cw(faces, cap)
+            l_cw(faces, cap, colors)
+            l_cw(faces, cap, colors)
         elif step == "B":
-            b_cw(faces, cap)
+            b_cw(faces, cap, colors)
         elif step == "B'":
-            b_ccw(faces, cap)
+            b_ccw(faces, cap, colors)
         elif step == "B2":
-            b_cw(faces, cap)
-            b_cw(faces, cap)
+            b_cw(faces, cap, colors)
+            b_cw(faces, cap, colors)
 
 
-def draw_square(frame, top_left, bottom_right, label):
-    cv2.rectangle(frame, top_left, bottom_right, (0, 0, 0), -1)
-    font = cv2.FONT_HERSHEY_SIMPLEX
-    cv2.putText(frame, label, (top_left[0] + 10, bottom_right[1] - 10), font, 1, (255, 255, 255), 2)
-    cv2.rectangle(frame, top_left, bottom_right, (255, 255, 255), 2)
-    for i in range(1, 3):
-        cv2.line(frame, (top_left[0] + i * (bottom_right[0] - top_left[0]) // 3, top_left[1]),
-                 (top_left[0] + i * (bottom_right[0] - top_left[0]) // 3, bottom_right[1]), (255, 255, 255), 2)
-        cv2.line(frame, (top_left[0], top_left[1] + i * (bottom_right[1] - top_left[1]) // 3),
-                 (bottom_right[0], top_left[1] + i * (bottom_right[1] - top_left[1]) // 3), (255, 255, 255), 2)
+def colors_append(lab, l_threshold, a_threshold, b_threshold):
+            colors.append((
+            (max(0, lab[0] - l_threshold), max(0, lab[1] - a_threshold), max(0, lab[2] - b_threshold)),
+            (min(255, lab[0] + l_threshold), min(255, lab[1] + a_threshold), min(255, lab[2] + b_threshold)),
+            color_names[click_count]
+            ))
 
 
-def draw_cube():
-    cube_size = 450
-    square_size = cube_size // 3
-    frame = np.ones((cube_size, cube_size + square_size, 3), dtype=np.uint8) * 255
-    label_positions = {
-        'U  0': (square_size * 3 // 2, square_size // 2),
-        'L  4': (square_size // 2, square_size * 3 // 2),
-        'F  2': (square_size * 3 // 2, square_size * 3 // 2),
-        'R  1': (square_size * 5 // 2, square_size * 3 // 2),
-        'B  5': (square_size * 7 // 2, square_size * 3 // 2),
-        'D  3': (square_size * 3 // 2, square_size * 5 // 2)
-    }
-    for label, position in label_positions.items():
-        top_left = (position[0] - square_size // 2, position[1] - square_size // 2)
-        bottom_right = (position[0] + square_size // 2, position[1] + square_size // 2)
-        draw_square(frame, top_left, bottom_right, label)
-    cv2.imshow("Open Cube", frame)
+def showPixelValue(event,x,y,flags,param): # handle mouse click events for color selection
+    global frame, colors, click_count
+
+    frame_height, frame_width = frame.shape[:2]
+
+    if x > frame_width - 1 or y > frame_height - 1: return
+    if event == cv2.EVENT_LBUTTONDOWN:
+        bgr = frame[y, x]
+        lab = cv2.cvtColor(np.uint8([[bgr]]), cv2.COLOR_BGR2LAB)[0][0]
+        print(lab)
+        if click_count == 0: # Red
+            colors_append(lab, 40, 20, 20)
+        elif click_count == 1: # Green
+            colors_append(lab, 40, 20, 20)
+        elif click_count == 2: # Blue
+            colors_append(lab, 40, 20, 20)
+        elif click_count == 3: # Yellow
+            colors_append(lab, 40, 20, 20)
+        elif click_count == 4: # White
+            colors_append(lab, 40, 20, 20)
+        else: # Orange
+            colors_append(lab, 40, 20, 20)
+        click_count += 1
+    cv2.imshow("Rubik\'s Cube Detection", frame)
+
+
+def dummy_callback(event, x, y, flags, param):
+    pass
 
 
 def main():
-
+    global frame
     cap = cv2.VideoCapture(0) # initialize the camera
 
     if not cap.isOpened():
         print("Can\'t capture camera")
         exit()
 
-    draw_cube()
+
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            print("Can\'t receive frame")
+            break
+        
+        if click_count >= 6: 
+            cv2.setMouseCallback("Rubik\'s Cube Detection", dummy_callback)
+            break
+        else:
+            frame = white_balancing(frame)
+            cv2.namedWindow("Rubik\'s Cube Detection")
+            cv2.setMouseCallback("Rubik\'s Cube Detection", showPixelValue)
+            cv2.putText(frame, f"Click on a {color_names[click_count]} piece with your mouse", (60,50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,0,0),2)
+            cv2.imshow("Rubik\'s Cube Detection", frame)
+        
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            exit()
 
     while True:
         ret, frame = cap.read()
