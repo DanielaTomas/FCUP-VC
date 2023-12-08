@@ -33,7 +33,9 @@ python3 main.py
     5. Show the **right** face (L 5);
     6. Finally, show the **back** face (B 6).
 
-* Once all six faces are detected, the solution will be displayed, and the steps to solve the Rubik's cube will be shown in real time.
+* Once all six faces are detected, the solution will be displayed, and the steps to solve the Rubik's cube will be shown in real time. You have to show the F face in the orientation you showed before for the solution to be shown correctly. You must first show the F face in the correct orientation so that the solution is presented correctly.
+
+* If you've done the steps above correctly, you should have your cube solved.
 
 ## Troubleshooting
 
